@@ -2,6 +2,8 @@ package org.osate.analysis.flows.reporting.exporters;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -14,6 +16,8 @@ import org.osate.analysis.flows.reporting.model.ReportedCell;
 import org.osate.analysis.flows.reporting.model.Section;
 
 public class CsvExport extends GenericExport {
+	
+	public List<Double> LatencyValues = new ArrayList<Double>();
 
 	public CsvExport(Report r) {
 		super(r);
@@ -61,6 +65,22 @@ public class CsvExport extends GenericExport {
 				}
 			}
 		}
+	}
+	
+	public void saveAndFill() {
+		StringBuffer reportContent;
+		reportContent = getFileContent();
+		String line[] = reportContent.toString().split("\n");
+		
+		for(int i=0;i<line.length;i++)
+		{
+			if(line[i].contains("Latency Total"))
+			{
+				String[] arr = line[i].split(",",-1);
+				LatencyValues.add(Double.parseDouble(arr[5].replaceAll("^\\.0123456789E-", "")));
+			}
+		}
+
 	}
 
 }

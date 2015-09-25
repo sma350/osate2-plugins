@@ -39,6 +39,8 @@
  */
 package org.osate.analysis.flows.actions;
 
+import java.util.List;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.osate.aadl2.Element;
 import org.osate.aadl2.NamedElement;
@@ -57,6 +59,7 @@ import org.osgi.framework.Bundle;
 
 public final class CheckFlowLatency extends AbstractInstanceOrDeclarativeModelModifyActionAction {
 	protected static LatencyReport latreport = null;
+	CsvExport csvExport;
 
 	@Override
 	protected void initPropertyReferences() {
@@ -105,6 +108,16 @@ public final class CheckFlowLatency extends AbstractInstanceOrDeclarativeModelMo
 		return true;
 	};
 
+	
+	protected boolean computeAnalysis() {
+		if (latreport != null && !latreport.getEntries().isEmpty()) {
+			Report report = latreport.export(errManager);
+			csvExport = new CsvExport(report);
+			csvExport.saveAndFill();
+		}
+		return true;
+	};
+
 	@Override
 	protected void analyzeInstanceModel(IProgressMonitor monitor, AnalysisErrorReporterManager errManager,
 			SystemInstance root, SystemOperationMode som) {
@@ -114,6 +127,11 @@ public final class CheckFlowLatency extends AbstractInstanceOrDeclarativeModelMo
 		flas.processPreOrderAll(root);
 
 		monitor.done();
+	}
+	
+	protected void analyzeInstanceModelWithoutMonitor(SystemInstance root) {
+		FlowLatencyAnalysisSwitch flas = new FlowLatencyAnalysisSwitch(null, root, latreport, null);
+		flas.processPreOrderAll(root);
 	}
 
 	public void invoke(IProgressMonitor monitor, SystemInstance root, SystemOperationMode som) {
@@ -128,5 +146,12 @@ public final class CheckFlowLatency extends AbstractInstanceOrDeclarativeModelMo
 		initializeAnalysis(root);
 		analyzeInstanceModel(monitor, errManager, root, som);
 		finalizeAnalysis();
+	}
+	
+	public List<Double> invoke(SystemInstance sys) {
+		initializeAnalysis(sys);
+		analyzeInstanceModelWithoutMonitor(sys);
+		computeAnalysis();
+		return csvExport.LatencyValues;
 	}
 }
